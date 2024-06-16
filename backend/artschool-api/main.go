@@ -17,8 +17,9 @@ func main() {
 	router := chi.NewRouter()
 	// Configure chi logging
 	router.Use(middleware.Logger)
-	// Create router
-	router.Get("/hello", basicHandler)
+	// Create routers
+	router.Get("/hello", helloHandler)
+	router.Get("/bye", byeHandler)
 
 	// create http server
 	server := &http.Server{
@@ -37,7 +38,12 @@ func main() {
 	}
 }
 
-// first handler
-func basicHandler(w http.ResponseWriter, r *http.Request) {
+// hello handler
+func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello, Go!"))
+}
+
+// bye handler
+func byeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Bye, Go!"))
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/DanVerh/artschool-admin/backend/api/handlers"
 )
 
+// Create router with confgiured routes
 func loadRoutes() *chi.Mux {
 	router := chi.NewRouter()
 
@@ -24,8 +25,9 @@ func loadRoutes() *chi.Mux {
 	return router
 }
 
+// Define all routes with HTTP methods
 func loadStudentRoutes(router chi.Router) {
-	studentHandler := &handler.Student{}	
+	studentHandler := &handler.Student{}
 	router.Post("/", studentHandler.Create)
 	router.Get("/", studentHandler.List)
 	router.Get("/{id}", studentHandler.GetByID)
@@ -34,7 +36,7 @@ func loadStudentRoutes(router chi.Router) {
 }
 
 func loadScheduleRoutes(router chi.Router) {
-	scheduleHandler := &handler.Schedule{}	
+	scheduleHandler := &handler.Schedule{}
 	router.Post("/", scheduleHandler.Create)
 	router.Get("/", scheduleHandler.List)
 	router.Get("/{id}", scheduleHandler.GetByID)

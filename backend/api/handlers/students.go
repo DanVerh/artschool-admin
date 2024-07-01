@@ -5,8 +5,10 @@ import (
 	"net/http"
 )
 
+// Create struct (class) for Student
 type Student struct{}
 
+// Define all methods of Strudent as handlers for routes
 func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Create a student")
 }

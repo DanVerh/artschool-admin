@@ -1,17 +1,17 @@
 package main
 
 import (
-  "context"
-  "fmt"
+	"context"
+	"fmt"
 
-  "github.com/DanVerh/artschool-admin/backend/api/application"
+	"github.com/DanVerh/artschool-admin/backend/api/application"
 )
 
 func main() {
-  app := application.New()
+	app := application.New()
 
-  err := app.Start(context.TODO())
-  if err != nil {
-    fmt.Println("failed to start app:", err)
-  }
+	err := app.Start(context.TODO())
+	if err != nil {
+		fmt.Println("failed to start app:", err)
+	}
 }

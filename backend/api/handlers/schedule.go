@@ -5,8 +5,10 @@ import (
 	"net/http"
 )
 
+// Create struct (class) for Schedule
 type Schedule struct{}
 
+// Define all methods of Schedule as handlers for routes
 func (schedule *Schedule) Create(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Create a schedule")
 }

@@ -1,0 +1,51 @@
+[
+    {
+        "create": "students",
+        "validator": {
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": ["name", "phone", "subscription", "startDate", "lastDate", "comments"],
+                "properties": {
+                    "name": {
+                        "bsonType": "string",
+                        "description": "fullname; required string"
+                    },
+                    "phone": {
+                        "bsonType": "string",
+                        "pattern": "^\\+[0-9]{12}$",
+                        "description": "phone number; required string that starts with + and has 12 digits then"
+                    },
+                    "subscription": {
+                        "bsonType": ["int", "null"],
+                        "minimum": 1,
+                        "maximum": 8,
+                        "description": "subscription classes left; required int from 1 to 8, null - if ended"
+                    },
+                    "startDate": {
+                        "bsonType": ["date", "null"],
+                        "description": "first attended class date; required date, null - if still has not attended"
+                    },
+                    "lastDate": {
+                        "bsonType": ["date", "null"],
+                        "description": "last attended class date; required date, null - if still has not attended"
+                    },
+                    "comments": {
+                        "bsonType": ["string", "null"],
+                        "description": "comments; required string"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "createIndexes": "students",
+        "indexes": [
+          {
+            "key": { "phone": 1 },
+            "name": "phone_unique_index",
+            "unique": true,
+            "background": true
+          }
+        ]
+    }
+]

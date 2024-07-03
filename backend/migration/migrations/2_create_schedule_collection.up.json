@@ -1,0 +1,56 @@
+[
+    {
+        "create": "schedule",
+        "validator": {
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": ["date", "classes"],
+                "properties": {
+                    "date": {
+                        "bsonType": "date",
+                        "description": "date of classes"
+                    },
+                    "classes": {
+                        "bsonType": "array",
+                        "description": "each student class; array of fields",
+                        "items": {
+                            "bsonType": "object",
+                            "required": ["studentId", "time", "type", "attendance"],
+                            "properties": {
+                                "studentId": {
+                                    "bsonType": "objectId",
+                                    "description": "student id"
+                                },
+                                "time": {
+                                    "bsonType": "string",
+                                    "pattern": "^(0[8-9]|1\\d|20):00$",
+                                    "description": "time of the class; can be 08-20:00"
+                                },
+                                "type": {
+                                    "bsonType": "string",
+                                    "enum": ["drawing", "painting", "both"],
+                                    "description": "type of class; must be drawing, painting, both"
+                                },
+                                "attendance": {
+                                    "bsonType": ["bool", "null"],
+                                    "description": "if student attended class, null if not marked still"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    {
+        "createIndexes": "schedule",
+        "indexes": [
+          {
+            "key": { "date": 1 },
+            "name": "date_unique_index",
+            "unique": true,
+            "background": true
+          }
+        ]
+    }
+]

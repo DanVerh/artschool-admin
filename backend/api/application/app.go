@@ -31,6 +31,8 @@ func (app *App) Start(ctx context.Context) error {
 		Addr:    ":" + strconv.Itoa(port), // convert port to ASCII
 		Handler: app.router,
 	}
+	
+	fmt.Printf("Application started on localhost:%d\n", port)
 
 	err := server.ListenAndServe()
 	if err != nil {

@@ -27,7 +27,7 @@ type Student struct{
 
 // POST for student creation
 func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
-	student = &Student{}
+	newStudent := &Student{}
 	// Check if the method is POST; return 405 in case of error
 	if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method. Needs to be POST", http.StatusMethodNotAllowed)
@@ -36,20 +36,20 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Parse JSON request body to Student struct
 	jsonDecoder := json.NewDecoder(r.Body)
-	err := jsonDecoder.Decode(student)
+	err := jsonDecoder.Decode(newStudent)
 	// Check if parsing is correct; return 400 in case of error
 	if err != nil {
-		http.Error(w, "Invalid JSON to student", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 	// Check if fullname and phone fields are passed in request
-	if student.Fullname == "" || student.Phone == "" {
+	if newStudent.Fullname == "" || newStudent.Phone == "" {
 		http.Error(w, "Missing fullname or phone field", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Log the created student
-	log.Printf("Created student: %v\n", student)
+	log.Printf("Created student: %v, %v\n", newStudent.Fullname, newStudent.Phone)
 }
 
 func (student *Student) List(w http.ResponseWriter, r *http.Request) {

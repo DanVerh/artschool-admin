@@ -13,15 +13,15 @@ type Database struct {
 	client *mongo.Client
 }
 
-func NewDbClient() *Database {
+func dbConnection() *Database {
 	db := &Database{
-		client: createClient(),
+		client: connectClient(),
 	}
 
 	return db
 }
 
-func createClient() *mongo.Client {
+func connectClient() *mongo.Client {
     client, err := mongo.NewClient(options.Client().ApplyURI(dbUri))
     if err != nil {
         log.Fatal(err)
@@ -40,3 +40,17 @@ func createClient() *mongo.Client {
     log.Println("Connected to MongoDB!")
     return client
 }
+
+
+// Close disconnects the MongoDB client and drops the connection
+/*func (db *Database) Close() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := db.client.Disconnect(ctx)
+	if err != nil {
+		log.Fatalf("Failed to disconnect MongoDB client: %v", err)
+	}
+
+	log.Println("Disconnected from MongoDB")
+}*/

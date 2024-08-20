@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
-	"encoding/json"
-	"log"
+
 	"github.com/DanVerh/artschool-admin/backend/api/db"
 )
 
@@ -13,10 +14,10 @@ import (
 type Student struct{
     Fullname     string    `json:"fullname" bson:"fullname"`
     Phone        string    `json:"phone" bson:"phone"`
-    Subscription int       `json:"subscription" bson:"subscription"`
-    StartDate    time.Time `json:"startDate" bson:"startDate"`
-    LastDate     time.Time `json:"lastDate" bson:"lastDate"`
-    Comments     string    `json:"comments" bson:"comments"`
+    Subscription *int       `json:"subscription" bson:"subscription"`
+    StartDate    *time.Time `json:"startDate" bson:"startDate"`
+    LastDate     *time.Time `json:"lastDate" bson:"lastDate"`
+    Comments     *string    `json:"comments" bson:"comments"`
 }
 
 // Define all methods of Student as handlers for routes
@@ -43,6 +44,8 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing fullname or phone field", http.StatusBadRequest)
 		return
 	}
+	// Define default properties of new student
+	newStudent.Subscription, newStudent.StartDate, newStudent.LastDate, newStudent.Comments = nil, nil, nil, nil
 
 	// Connect to DB
 	db := db.DbConnect()
@@ -50,6 +53,7 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	
 	_, err = collection.InsertOne(nil, newStudent)
 	if err != nil {
+		log.Printf("Failed to insert document: %v", err)
 	    http.Error(w, "Failed to insert the student into the database", http.StatusInternalServerError)
 	    return
 	}

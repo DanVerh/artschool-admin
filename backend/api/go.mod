@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/go-chi/chi/v5 v5.0.8
 	go.mongodb.org/mongo-driver v1.16.0
+	golang.org/x/tools v0.6.0
 )
 
 require (

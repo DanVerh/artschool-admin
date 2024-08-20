@@ -27,7 +27,9 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	newStudent := &Student{}
 	// Check if the method is POST; return 405 in case of error
 	if r.Method != http.MethodPost {
-        http.Error(w, "Invalid request method. Needs to be POST", http.StatusMethodNotAllowed)
+		errorMessage := "Invalid request method. Needs to be POST"
+		log.Println(errorMessage)
+        http.Error(w, errorMessage, http.StatusMethodNotAllowed)
         return
     }
 
@@ -36,12 +38,16 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	err := jsonDecoder.Decode(newStudent)
 	// Check if parsing is correct; return 400 in case of error
 	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		errorMessage := "Invalid JSON"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusBadRequest)
 		return
 	}
 	// Check if fullname and phone fields are passed in request
 	if newStudent.Fullname == "" || newStudent.Phone == "" {
-		http.Error(w, "Missing fullname or phone field", http.StatusBadRequest)
+		errorMessage := "Missing fullname or phone field"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusBadRequest)
 		return
 	}
 	// Define default properties of new student
@@ -63,6 +69,11 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Disconnect from the DB
 	db.DbDisconnect()
+
+	// Respond with the created student data
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newStudent)
 }
 
 func (student *Student) List(w http.ResponseWriter, r *http.Request) {

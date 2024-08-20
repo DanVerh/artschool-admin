@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/DanVerh/artschool-admin/backend/api/db"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Create struct (class) for Student
@@ -55,6 +56,8 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Connect to DB
 	db := db.DbConnect()
+	// Disconnect from the DB
+	defer db.DbDisconnect()
 	collection := db.Client.Database("artschool-admin").Collection("students")
 	
 	_, err = collection.InsertOne(nil, newStudent)
@@ -67,21 +70,72 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	// Log the created student
 	log.Printf("Created student: %v, %v\n", newStudent.Fullname, newStudent.Phone)
 
-	// Disconnect from the DB
-	db.DbDisconnect()
-
 	// Respond with the created student data
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(newStudent)
 }
 
+
+// GET for students list
 func (student *Student) List(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("List all students")
+	// Check if the method is GET; return 405 in case of error
+	if r.Method != http.MethodGet {
+		errorMessage := "Invalid request method. Needs to be GET"
+		log.Println(errorMessage)
+        http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+        return
+    }
+
+	// Connect to DB
+	db := db.DbConnect()
+	collection := db.Client.Database("artschool-admin").Collection("students")
+
+	// Retrieve all documents without context
+	cursor, err := collection.Find(nil, bson.M{})
+	if err != nil {
+		log.Printf("Failed to retrieve documents: %v", err)
+		http.Error(w, "Failed to retrieve documents from the database", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(nil)
+
+	// Prepare a slice to hold the documents
+	var students []Student
+
+	// Iterate through the cursor and decode each document into a Student struct
+	for cursor.Next(nil) {
+		var student Student
+		if err := cursor.Decode(&student); err != nil {
+			log.Printf("Failed to decode document: %v", err)
+			http.Error(w, "Failed to decode document", http.StatusInternalServerError)
+			return
+		}
+		students = append(students, student)
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Printf("Cursor error: %v", err)
+		http.Error(w, "Error occurred during cursor iteration", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with the list of students as JSON
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(students)
 }
 
+
+// GET for one student by ID
 func (student *Student) GetByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Get a student by ID")
+	// Check if the method is GET; return 405 in case of error
+	if r.Method != http.MethodGet {
+		errorMessage := "Invalid request method. Needs to be GET"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		return
+	}
 }
 
 func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {

@@ -6,11 +6,7 @@ import (
 	"time"
 	"encoding/json"
 	"log"
-
-	//"go.mongodb.org/mongo-driver/bson"
-    //"go.mongodb.org/mongo-driver/mongo"
-    //"go.mongodb.org/mongo-driver/mongo/options"
-    //"go.mongodb.org/mongo-driver/mongo/readpref"
+	"github.com/DanVerh/artschool-admin/backend/api/db"
 )
 
 // Create struct (class) for Student
@@ -48,8 +44,21 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Connect to DB
+	db := db.DbConnect()
+	collection := db.Client.Database("artschool-admin").Collection("students")
+	
+	_, err = collection.InsertOne(nil, newStudent)
+	if err != nil {
+	    http.Error(w, "Failed to insert the student into the database", http.StatusInternalServerError)
+	    return
+	}
+
 	// Log the created student
 	log.Printf("Created student: %v, %v\n", newStudent.Fullname, newStudent.Phone)
+
+	// Disconnect from the DB
+	db.DbDisconnect()
 }
 
 func (student *Student) List(w http.ResponseWriter, r *http.Request) {

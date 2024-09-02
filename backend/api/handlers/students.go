@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strings"
 
 	"github.com/DanVerh/artschool-admin/backend/api/db"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Create struct (class) for Student
@@ -51,6 +54,7 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errorMessage, http.StatusBadRequest)
 		return
 	}
+
 	// Define default properties of new student
 	newStudent.Subscription, newStudent.StartDate, newStudent.LastDate, newStudent.Comments = nil, nil, nil, nil
 
@@ -136,6 +140,41 @@ func (student *Student) GetByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Extract the ObjectId from the URL path
+    id := strings.TrimPrefix(r.URL.Path, "/students/")
+    // Convert the string ID to a MongoDB ObjectId type
+    objectID, err := primitive.ObjectIDFromHex(id)
+    if err != nil {
+        http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+        return
+    }
+	// Create a filter to search for the document with this ObjectId
+	filter := bson.M{"_id": objectID}
+	var result bson.M
+
+	// Connect to DB
+	db := db.DbConnect()
+	// Disconnect from the DB
+	defer db.DbDisconnect()
+	// Define collection
+	collection := db.Client.Database("artschool-admin").Collection("students")
+
+	// Find the record with required id
+    err = collection.FindOne(nil, filter).Decode(&result)
+    if err != nil {
+        if err == mongo.ErrNoDocuments {
+            http.Error(w, "No document found with the given ObjectId", http.StatusNotFound)
+        } else {
+            http.Error(w, "Failed to retrieve document", http.StatusInternalServerError)
+        }
+        return
+    }
+
+    // Set the response header to JSON and encode the result
+	w.WriteHeader(http.StatusOK)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(result)
 }
 
 func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {

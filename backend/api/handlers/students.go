@@ -177,8 +177,54 @@ func (student *Student) GetByID(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(result)
 }
 
+
+// PUT for one student by ID
 func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Update a student by ID")
+	// Check if the method is PUT; return 405 in case of error
+	if r.Method != http.MethodPut {
+		errorMessage := "Invalid request method. Needs to be PUT"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract the ObjectId from the URL path
+	id := strings.TrimPrefix(r.URL.Path, "/students/")
+	// Convert the string ID to a MongoDB ObjectId type
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		return
+	}
+
+	var updateBody bson.M
+    jsonDecoder := json.NewDecoder(r.Body)
+    err = jsonDecoder.Decode(&updateBody)
+    if err != nil {
+        http.Error(w, "Invalid request body", http.StatusBadRequest)
+        return
+    }
+
+	// Connect to DB
+	db := db.DbConnect()
+	// Disconnect from the DB
+	defer db.DbDisconnect()
+	// Define collection
+	collection := db.Client.Database("artschool-admin").Collection("students")
+
+	// Find the record with required id
+	updateResult, err := collection.UpdateByID(nil, objectID, bson.M{"$set": updateBody})
+	if err != nil {
+		log.Printf("Failed to update student: %v", err)
+		http.Error(w, "Failed to update student", http.StatusInternalServerError)
+	}
+	if updateResult.MatchedCount == 0 {
+		http.Error(w, "No record found with the provided ID", http.StatusNotFound)
+		return
+	}
+
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Student updated successfully"))
 }
 
 func (student *Student) DeleteByID(w http.ResponseWriter, r *http.Request) {

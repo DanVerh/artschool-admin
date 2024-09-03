@@ -219,6 +219,7 @@ func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to update student", http.StatusInternalServerError)
 	}
 	if updateResult.MatchedCount == 0 {
+		log.Println("No record found with the provided ID")
 		http.Error(w, "No record found with the provided ID", http.StatusNotFound)
 		return
 	}
@@ -240,6 +241,47 @@ func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(response))
 }
 
+
+// DELETE for one student by ID
 func (student *Student) DeleteByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Delete a student by ID")
+	// Check if the method is DELETE; return 405 in case of error
+	if r.Method != http.MethodDelete {
+		errorMessage := "Invalid request method. Needs to be DELETE"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract the ObjectId from the URL path
+	id := strings.TrimPrefix(r.URL.Path, "/students/")
+	// Convert the string ID to a MongoDB ObjectId type
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		return
+	}
+
+	// Connect to DB
+	db := db.DbConnect()
+	// Disconnect from the DB
+	defer db.DbDisconnect()
+	// Define collection
+	collection := db.Client.Database("artschool-admin").Collection("students")
+
+	// Delete record with mentioned id
+	deleteResult, err := collection.DeleteOne(nil, bson.M{"_id": objectID})
+	if err != nil {
+		log.Printf("Failed to update student: %v", err)
+		http.Error(w, "Failed to update student", http.StatusInternalServerError)
+	} 
+	if deleteResult.DeletedCount == 0 {
+		log.Printf("No record found with the provided ID: %v", objectID)
+		http.Error(w, fmt.Sprintf("No record found with the provided ID: %v", objectID), http.StatusNotFound)
+		return
+	}
+
+	// Write the response with deleted student id
+	response := fmt.Sprintf("Deleted student by mentioned id: %v", objectID)
+	w.WriteHeader(http.StatusOK)
+    w.Write([]byte(response))
 }

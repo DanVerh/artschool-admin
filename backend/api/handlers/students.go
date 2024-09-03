@@ -223,8 +223,20 @@ func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var updateKeys []string
+	// Check if any student field is updated
+    for updateKey := range updateBody {
+        if _, found := map[string]bool{"fullname": true, "phone": true, "subscription": true, "startDate": true, "lastDate": true, "comments": true}[updateKey]; !found {
+			log.Println("No student field is updated")
+			http.Error(w, "No student field is updated", http.StatusBadRequest)
+			return
+		}
+		updateKeys = append(updateKeys, updateKey)
+    }
+
+	response := fmt.Sprintf("Student fields updated successfully: %v", updateKeys)
     w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Student updated successfully"))
+    w.Write([]byte(response))
 }
 
 func (student *Student) DeleteByID(w http.ResponseWriter, r *http.Request) {

@@ -223,8 +223,8 @@ func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    // Check if any student field is updated and save these fields to slice
 	var updateKeys []string
-	// Check if any student field is updated
     for updateKey := range updateBody {
         if _, found := map[string]bool{"fullname": true, "phone": true, "subscription": true, "startDate": true, "lastDate": true, "comments": true}[updateKey]; !found {
 			log.Println("No student field is updated")
@@ -234,6 +234,7 @@ func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
 		updateKeys = append(updateKeys, updateKey)
     }
 
+	// Write the response with updated keys
 	response := fmt.Sprintf("Student fields updated successfully: %v", updateKeys)
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(response))

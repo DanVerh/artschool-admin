@@ -21,6 +21,7 @@ type StudentHandler struct{}
 
 // Create struct (class) for Student
 type Student struct{
+	Id 			 *primitive.ObjectID	`json:"id" bson:"_id"`
     Fullname     string    `json:"fullname" bson:"fullname"`
     Phone        string    `json:"phone" bson:"phone"`
     Subscription *int       `json:"subscription" bson:"subscription"`
@@ -60,8 +61,9 @@ func (studentHandler *StudentHandler) Create(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	objectId := primitive.NewObjectID()
 	// Define default properties of new student
-	student.Subscription, student.StartDate, student.LastDate, student.Comments = nil, nil, nil, nil
+	student.Id, student.Subscription, student.StartDate, student.LastDate, student.Comments = &objectId,nil, nil, nil, nil
 
 	// Connect to DB
 	db := db.DbConnect()

@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// Create struct (class) for *StudentHandler to handle requests
+// Create struct (class) for StudentHandler to handle requests
 type StudentHandler struct{}
 
 // Create struct (class) for Student

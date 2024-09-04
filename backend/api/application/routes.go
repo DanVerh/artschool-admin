@@ -36,7 +36,7 @@ func loadStudentRoutes(router chi.Router) {
 }
 
 func loadScheduleRoutes(router chi.Router) {
-	scheduleHandler := &handler.Schedule{}
+	scheduleHandler := &handler.ScheduleHandler{}
 	router.Post("/", scheduleHandler.Create)
 	router.Get("/", scheduleHandler.List)
 	router.Get("/{id}", scheduleHandler.GetByID)

@@ -16,6 +16,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Create struct (class) for *StudentHandler to handle requests
+type StudentHandler struct{}
+
 // Create struct (class) for Student
 type Student struct{
     Fullname     string    `json:"fullname" bson:"fullname"`
@@ -29,8 +32,8 @@ type Student struct{
 // Define all methods of Student as handlers for routes
 
 // POST for student creation
-func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
-	newStudent := &Student{}
+func (studentHandler *StudentHandler) Create(w http.ResponseWriter, r *http.Request) {
+	student := &Student{}
 	// Check if the method is POST; return 405 in case of error
 	if r.Method != http.MethodPost {
 		errorMessage := "Invalid request method. Needs to be POST"
@@ -41,7 +44,7 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Parse JSON request body to Student struct
 	jsonDecoder := json.NewDecoder(r.Body)
-	err := jsonDecoder.Decode(newStudent)
+	err := jsonDecoder.Decode(student)
 	// Check if parsing is correct; return 400 in case of error
 	if err != nil {
 		errorMessage := "Invalid JSON"
@@ -50,7 +53,7 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Check if fullname and phone fields are passed in request
-	if newStudent.Fullname == "" || newStudent.Phone == "" {
+	if student.Fullname == "" || student.Phone == "" {
 		errorMessage := "Missing fullname or phone field"
 		log.Println(errorMessage)
 		http.Error(w, errorMessage, http.StatusBadRequest)
@@ -58,7 +61,7 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Define default properties of new student
-	newStudent.Subscription, newStudent.StartDate, newStudent.LastDate, newStudent.Comments = nil, nil, nil, nil
+	student.Subscription, student.StartDate, student.LastDate, student.Comments = nil, nil, nil, nil
 
 	// Connect to DB
 	db := db.DbConnect()
@@ -66,7 +69,7 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	defer db.DbDisconnect()
 	collection := db.Client.Database("artschool-admin").Collection("students")
 	
-	_, err = collection.InsertOne(nil, newStudent)
+	_, err = collection.InsertOne(nil, student)
 	if err != nil {
 		log.Printf("Failed to insert document: %v", err)
 	    http.Error(w, "Failed to insert the student into the database", http.StatusInternalServerError)
@@ -74,17 +77,17 @@ func (student *Student) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log the created student
-	log.Printf("Created student: %v, %v\n", newStudent.Fullname, newStudent.Phone)
+	log.Printf("Created student: %v, %v\n", student.Fullname, student.Phone)
 
 	// Respond with the created student data
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(newStudent)
+	json.NewEncoder(w).Encode(student)
 }
 
 
 // GET for students list
-func (student *Student) List(w http.ResponseWriter, r *http.Request) {
+func (studentHandler *StudentHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is GET; return 405 in case of error
 	if r.Method != http.MethodGet {
 		errorMessage := "Invalid request method. Needs to be GET"
@@ -134,7 +137,7 @@ func (student *Student) List(w http.ResponseWriter, r *http.Request) {
 
 
 // GET for one student by ID
-func (student *Student) GetByID(w http.ResponseWriter, r *http.Request) {
+func (studentHandler *StudentHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is GET; return 405 in case of error
 	if r.Method != http.MethodGet {
 		errorMessage := "Invalid request method. Needs to be GET"
@@ -181,7 +184,7 @@ func (student *Student) GetByID(w http.ResponseWriter, r *http.Request) {
 
 
 // PUT for one student by ID
-func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
+func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is PUT; return 405 in case of error
 	if r.Method != http.MethodPut {
 		errorMessage := "Invalid request method. Needs to be PUT"
@@ -245,7 +248,7 @@ func (student *Student) UpdateByID(w http.ResponseWriter, r *http.Request) {
 
 
 // DELETE for one student by ID
-func (student *Student) DeleteByID(w http.ResponseWriter, r *http.Request) {
+func (studentHandler *StudentHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is DELETE; return 405 in case of error
 	if r.Method != http.MethodDelete {
 		errorMessage := "Invalid request method. Needs to be DELETE"

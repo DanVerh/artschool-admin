@@ -27,7 +27,7 @@ func loadRoutes() *chi.Mux {
 
 // Define all routes with HTTP methods
 func loadStudentRoutes(router chi.Router) {
-	studentHandler := &handler.Student{}
+	studentHandler := &handler.StudentHandler{}
 	router.Post("/", studentHandler.Create)
 	router.Get("/", studentHandler.List)
 	router.Get("/{id}", studentHandler.GetByID)

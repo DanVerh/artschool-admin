@@ -21,7 +21,7 @@ type StudentHandler struct{}
 
 // Create struct (class) for Student
 type Student struct{
-	Id 			 *primitive.ObjectID	`json:"id" bson:"_id"`
+	Id 			 primitive.ObjectID	`json:"id" bson:"_id"`
     Fullname     string    `json:"fullname" bson:"fullname"`
     Phone        string    `json:"phone" bson:"phone"`
     Subscription *int       `json:"subscription" bson:"subscription"`
@@ -61,9 +61,8 @@ func (studentHandler *StudentHandler) Create(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	objectId := primitive.NewObjectID()
 	// Define default properties of new student
-	student.Id, student.Subscription, student.StartDate, student.LastDate, student.Comments = &objectId,nil, nil, nil, nil
+	student.Id, student.Subscription, student.StartDate, student.LastDate, student.Comments = primitive.NewObjectID(),nil, nil, nil, nil
 
 	// Connect to DB
 	db := db.DbConnect()
@@ -243,7 +242,7 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
     }
 
 	// Write the response with updated keys
-	response := fmt.Sprintf("Student fields updated successfully: %v", updateKeys)
+	response := fmt.Sprintf("Student with id %v fields updated successfully: %v",id, updateKeys)
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(response))
 }
@@ -282,13 +281,13 @@ func (studentHandler *StudentHandler) DeleteByID(w http.ResponseWriter, r *http.
 		http.Error(w, "Failed to update student", http.StatusInternalServerError)
 	} 
 	if deleteResult.DeletedCount == 0 {
-		log.Printf("No record found with the provided ID: %v", objectID)
-		http.Error(w, fmt.Sprintf("No record found with the provided ID: %v", objectID), http.StatusNotFound)
+		log.Printf("No record found with the provided ID: %v", id)
+		http.Error(w, fmt.Sprintf("No record found with the provided ID: %v", id), http.StatusNotFound)
 		return
 	}
 
 	// Write the response with deleted student id
-	response := fmt.Sprintf("Deleted student by mentioned id: %v", objectID)
+	response := fmt.Sprintf("Deleted student by mentioned id: %v", id)
 	w.WriteHeader(http.StatusOK)
     w.Write([]byte(response))
 }

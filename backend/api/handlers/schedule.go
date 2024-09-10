@@ -8,6 +8,7 @@ import (
 
 	"github.com/DanVerh/artschool-admin/backend/api/db"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Create struct (class) for StudentHandler to handle requests
@@ -84,8 +85,55 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(schedule)
 }
 
+
+// GET for schedules list
 func (scheduleHandler *ScheduleHandler) List(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("List all schedules")
+	// Check if the method is GET; return 405 in case of error
+	if r.Method != http.MethodGet {
+		errorMessage := "Invalid request method. Needs to be GET"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Connect to DB
+	db := db.DbConnect()
+	defer db.DbDisconnect()
+	collection := db.Client.Database("artschool-admin").Collection("schedule")
+
+	// Retrieve all documents without context
+	cursor, err := collection.Find(nil, bson.M{})
+	if err != nil {
+		log.Printf("Failed to retrieve documents: %v", err)
+		http.Error(w, "Failed to retrieve documents from the database", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(nil)
+
+	// Prepare a slice to hold the documents
+	var schedules []Schedule
+
+	// Iterate through the cursor and decode each document into a Schedule struct
+	for cursor.Next(nil) {
+		var schedule Schedule
+		if err := cursor.Decode(&schedule); err != nil {
+			log.Printf("Failed to decode document: %v", err)
+			http.Error(w, "Failed to decode document", http.StatusInternalServerError)
+			return
+		}
+		schedules = append(schedules, schedule)
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Printf("Cursor error: %v", err)
+		http.Error(w, "Error occurred during cursor iteration", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with the list of schedules as JSON
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(schedules)
 }
 
 func (scheduleHandler *ScheduleHandler) GetByID(w http.ResponseWriter, r *http.Request) {

@@ -99,6 +99,7 @@ func (studentHandler *StudentHandler) List(w http.ResponseWriter, r *http.Reques
 
 	// Connect to DB
 	db := db.DbConnect()
+	defer db.DbDisconnect()
 	collection := db.Client.Database("artschool-admin").Collection("students")
 
 	// Retrieve all documents without context

@@ -18,7 +18,7 @@ type Class struct {
 	StudentId  primitive.ObjectID `json:"studentId" bson:"studentId"`
 	Time       string             `json:"time" bson:"time"`
 	Type       string             `json:"type" bson:"type"`
-	Attendence *bool              `json:"attendence" bson:"attendence"`
+	Attendence *bool              `json:"attendance" bson:"attendance"`
 }
 
 // Create struct (class) for Schedule
@@ -48,6 +48,14 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 	// Check if parsing is correct; return 400 in case of error
 	if err != nil {
 		errorMessage := "Invalid JSON"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusBadRequest)
+		return
+	}
+
+	// Check if classes array is not empty; return 400 in case of error
+	if len(schedule.Classes) == 0 {
+		errorMessage := "No classes found for schedule creation"
 		log.Println(errorMessage)
 		http.Error(w, errorMessage, http.StatusBadRequest)
 		return

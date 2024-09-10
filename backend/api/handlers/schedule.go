@@ -192,5 +192,44 @@ func (scheduleHandler *ScheduleHandler) UpdateByID(w http.ResponseWriter, r *htt
 }
 
 func (scheduleHandler *ScheduleHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Delete a schedule by ID")
+	// Check if the method is DELETE; return 405 in case of error
+	if r.Method != http.MethodDelete {
+		errorMessage := "Invalid request method. Needs to be DELETE"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract the ObjectId from the URL path
+	id := strings.TrimPrefix(r.URL.Path, "/schedule/")
+	// Convert the string ID to a MongoDB ObjectId type
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		return
+	}
+
+	// Connect to DB
+	db := db.DbConnect()
+	// Disconnect from the DB
+	defer db.DbDisconnect()
+	// Define collection
+	collection := db.Client.Database("artschool-admin").Collection("schedule")
+
+	// Delete record with mentioned id
+	deleteResult, err := collection.DeleteOne(nil, bson.M{"_id": objectID})
+	if err != nil {
+		log.Printf("Failed to delete student: %v", err)
+		http.Error(w, "Failed to delete schedule", http.StatusInternalServerError)
+	} 
+	if deleteResult.DeletedCount == 0 {
+		log.Printf("No record found with the provided ID: %v", id)
+		http.Error(w, fmt.Sprintf("No record found with the provided ID: %v", id), http.StatusNotFound)
+		return
+	}
+
+	// Write the response with deleted schedule id
+	response := fmt.Sprintf("Deleted schedule by mentioned id: %v", id)
+	w.WriteHeader(http.StatusOK)
+    w.Write([]byte(response))
 }

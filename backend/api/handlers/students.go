@@ -278,8 +278,8 @@ func (studentHandler *StudentHandler) DeleteByID(w http.ResponseWriter, r *http.
 	// Delete record with mentioned id
 	deleteResult, err := collection.DeleteOne(nil, bson.M{"_id": objectID})
 	if err != nil {
-		log.Printf("Failed to update student: %v", err)
-		http.Error(w, "Failed to update student", http.StatusInternalServerError)
+		log.Printf("Failed to delete student: %v", err)
+		http.Error(w, "Failed to delete student", http.StatusInternalServerError)
 	} 
 	if deleteResult.DeletedCount == 0 {
 		log.Printf("No record found with the provided ID: %v", id)

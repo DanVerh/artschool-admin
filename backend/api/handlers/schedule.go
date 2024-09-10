@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/DanVerh/artschool-admin/backend/api/db"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -26,6 +26,7 @@ type Class struct {
 
 // Create struct (class) for Schedule
 type Schedule struct {
+	Id      primitive.ObjectID `json:"id" bson:"_id"`
 	Date    primitive.DateTime `bson:"date" json:"date"`
 	Classes []Class            `bson:"classes" json:"classes"`
 }
@@ -64,6 +65,9 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Create primitive object id in mongo for schedule
+	schedule.Id = primitive.NewObjectID()
+
 	// Connect to DB
 	db := db.DbConnect()
 	// Disconnect from the DB
@@ -74,8 +78,8 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 	_, err = collection.InsertOne(nil, schedule)
 	if err != nil {
 		log.Printf("Failed to insert document: %v", err)
-	    http.Error(w, "Failed to insert the schedule into the database", http.StatusInternalServerError)
-	    return
+		http.Error(w, "Failed to insert the schedule into the database", http.StatusInternalServerError)
+		return
 	}
 
 	// Log the created schedule
@@ -86,7 +90,6 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(schedule)
 }
-
 
 // GET for schedules list
 func (scheduleHandler *ScheduleHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +141,6 @@ func (scheduleHandler *ScheduleHandler) List(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(schedules)
 }
 
-
 // GET for one schedule by ID
 func (scheduleHandler *ScheduleHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is GET; return 405 in case of error
@@ -150,13 +152,13 @@ func (scheduleHandler *ScheduleHandler) GetByID(w http.ResponseWriter, r *http.R
 	}
 
 	// Extract the ObjectId from the URL path
-    id := strings.TrimPrefix(r.URL.Path, "/schedule/")
-    // Convert the string ID to a MongoDB ObjectId type
-    objectID, err := primitive.ObjectIDFromHex(id)
-    if err != nil {
-        http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
-        return
-    }
+	id := strings.TrimPrefix(r.URL.Path, "/schedule/")
+	// Convert the string ID to a MongoDB ObjectId type
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		return
+	}
 	// Create a filter to search for the document with this ObjectId
 	filter := bson.M{"_id": objectID}
 	var result bson.M
@@ -169,20 +171,20 @@ func (scheduleHandler *ScheduleHandler) GetByID(w http.ResponseWriter, r *http.R
 	collection := db.Client.Database("artschool-admin").Collection("schedule")
 
 	// Find the record with required id
-    err = collection.FindOne(nil, filter).Decode(&result)
-    if err != nil {
-        if err == mongo.ErrNoDocuments {
-            http.Error(w, "No document found with the given ObjectId", http.StatusNotFound)
-        } else {
-            http.Error(w, "Failed to retrieve document", http.StatusInternalServerError)
-        }
-        return
-    }
+	err = collection.FindOne(nil, filter).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "No document found with the given ObjectId", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to retrieve document", http.StatusInternalServerError)
+		}
+		return
+	}
 
-    // Set the response header to JSON and encode the result
+	// Set the response header to JSON and encode the result
 	w.WriteHeader(http.StatusOK)
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(result)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 
 func (scheduleHandler *ScheduleHandler) UpdateByID(w http.ResponseWriter, r *http.Request) {

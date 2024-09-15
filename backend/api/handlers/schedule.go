@@ -246,12 +246,6 @@ func (scheduleHandler *ScheduleHandler) UpdateByID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// TODO: CHECK IF JSON REQUEST BODY IS OK
-
-	log.Println(updatedClass)
-
-	// TODO: CHECK IF STUDENT EXISTS IN STUDENT COLLECTION
-
 	// Check if class is already booked for this student
 	var studentClassExists bool
 	var updatedClassIndex int
@@ -278,6 +272,7 @@ func (scheduleHandler *ScheduleHandler) UpdateByID(w http.ResponseWriter, r *htt
 	if err != nil {
 		log.Printf("Failed to update schedule: %v", err)
 		http.Error(w, "Failed to update schedule", http.StatusInternalServerError)
+		return
 	}
 	if updateResult.MatchedCount == 0 {
 		log.Println("No record found with the provided ID")

@@ -188,7 +188,107 @@ func (scheduleHandler *ScheduleHandler) GetByID(w http.ResponseWriter, r *http.R
 }
 
 func (scheduleHandler *ScheduleHandler) UpdateByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Update a schedule by ID")
+	// Check if the method is PUT; return 405 in case of error
+	if r.Method != http.MethodPut {
+		errorMessage := "Invalid request method. Needs to be PUT"
+		log.Println(errorMessage)
+		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract the ObjectId from the URL path
+	id := strings.TrimPrefix(r.URL.Path, "/schedule/")
+	// Convert the string ID to a MongoDB ObjectId type
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		return
+	}
+
+	// GET CURRENT SCHEDULE
+
+	// Create a filter to search for the document with this ObjectId
+	filter := bson.M{"_id": objectID}
+	var currentSchedule Schedule
+
+	// Connect to DB
+	db := db.DbConnect()
+	// Disconnect from the DB
+	defer db.DbDisconnect()
+	// Define collection
+	collection := db.Client.Database("artschool-admin").Collection("schedule")
+
+	// Find the record with required id
+	err = collection.FindOne(nil, filter).Decode(&currentSchedule)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "No document found with the given ObjectId", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to retrieve document", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Get current schedule student ids
+	var currentStudentIds []primitive.ObjectID
+	for classIndex := range currentSchedule.Classes {
+		currentStudentIds = append(currentStudentIds, currentSchedule.Classes[classIndex].StudentId)
+	}
+
+	// UPDATE THE CURRENT SCHEDULE
+
+	// Decode request body to schedule object
+	updatedClass := Class{}
+	jsonDecoder := json.NewDecoder(r.Body)
+	err = jsonDecoder.Decode(&updatedClass)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// TODO: CHECK IF JSON REQUEST BODY IS OK
+
+	log.Println(updatedClass)
+
+	// TODO: CHECK IF STUDENT EXISTS IN STUDENT COLLECTION
+
+	// Check if class is already booked for this student
+	var studentClassExists bool
+	var updatedClassIndex int
+	for index, scheduledStudentId := range currentStudentIds {
+		if scheduledStudentId == updatedClass.StudentId {
+			studentClassExists = true
+			updatedClassIndex = index
+			break
+		}
+		studentClassExists = false
+	}
+	log.Println(studentClassExists, updatedClassIndex)
+
+	if !(studentClassExists) {
+		currentSchedule.Classes = append(currentSchedule.Classes, updatedClass)
+	} else {
+		currentSchedule.Classes[updatedClassIndex] = updatedClass
+	}
+
+	log.Println(currentSchedule)
+
+	// Find the record with required id
+	updateResult, err := collection.UpdateByID(nil, objectID, bson.M{"$set": currentSchedule})
+	if err != nil {
+		log.Printf("Failed to update schedule: %v", err)
+		http.Error(w, "Failed to update schedule", http.StatusInternalServerError)
+	}
+	if updateResult.MatchedCount == 0 {
+		log.Println("No record found with the provided ID")
+		http.Error(w, "No record found with the provided ID", http.StatusNotFound)
+		return
+	}
+
+	// Write the response with updated keys
+	response := fmt.Sprintf("Schedule updated successfully")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(response))
 }
 
 func (scheduleHandler *ScheduleHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
@@ -221,7 +321,7 @@ func (scheduleHandler *ScheduleHandler) DeleteByID(w http.ResponseWriter, r *htt
 	if err != nil {
 		log.Printf("Failed to delete student: %v", err)
 		http.Error(w, "Failed to delete schedule", http.StatusInternalServerError)
-	} 
+	}
 	if deleteResult.DeletedCount == 0 {
 		log.Printf("No record found with the provided ID: %v", id)
 		http.Error(w, fmt.Sprintf("No record found with the provided ID: %v", id), http.StatusNotFound)
@@ -231,5 +331,5 @@ func (scheduleHandler *ScheduleHandler) DeleteByID(w http.ResponseWriter, r *htt
 	// Write the response with deleted schedule id
 	response := fmt.Sprintf("Deleted schedule by mentioned id: %v", id)
 	w.WriteHeader(http.StatusOK)
-    w.Write([]byte(response))
+	w.Write([]byte(response))
 }

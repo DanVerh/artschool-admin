@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DanVerh/artschool-admin/backend/api/db"
+	"github.com/DanVerh/artschool-admin/backend/api/errorHandling"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -40,9 +41,7 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 
 	// Check if the method is POST; return 405 in case of error
 	if r.Method != http.MethodPost {
-		errorMessage := "Invalid request method. Needs to be POST"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be POST", nil)
 		return
 	}
 
@@ -51,17 +50,13 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 	err := jsonDecoder.Decode(&schedule)
 	// Check if parsing is correct; return 400 in case of error
 	if err != nil {
-		errorMessage := "Invalid JSON"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusBadRequest)
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Invalid JSON", nil)
 		return
 	}
 
 	// Check if classes array is not empty; return 400 in case of error
 	if len(schedule.Classes) == 0 {
-		errorMessage := "No classes found for schedule creation"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusBadRequest)
+		errorHandling.ThrowError(w, http.StatusBadRequest, "No classes found for schedule creation", nil)
 		return
 	}
 
@@ -77,8 +72,7 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 	// Insert schedule object to schedule collection in mongo
 	_, err = collection.InsertOne(nil, schedule)
 	if err != nil {
-		log.Printf("Failed to insert document: %v", err)
-		http.Error(w, "Failed to insert the schedule into the database", http.StatusInternalServerError)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to insert the schedule into the database", &err)
 		return
 	}
 
@@ -95,9 +89,7 @@ func (scheduleHandler *ScheduleHandler) Create(w http.ResponseWriter, r *http.Re
 func (scheduleHandler *ScheduleHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is GET; return 405 in case of error
 	if r.Method != http.MethodGet {
-		errorMessage := "Invalid request method. Needs to be GET"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be GET", nil)
 		return
 	}
 
@@ -109,8 +101,7 @@ func (scheduleHandler *ScheduleHandler) List(w http.ResponseWriter, r *http.Requ
 	// Retrieve all documents without context
 	cursor, err := collection.Find(nil, bson.M{})
 	if err != nil {
-		log.Printf("Failed to retrieve documents: %v", err)
-		http.Error(w, "Failed to retrieve documents from the database", http.StatusInternalServerError)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to retrieve documents from the database", &err)
 		return
 	}
 	defer cursor.Close(nil)
@@ -122,8 +113,7 @@ func (scheduleHandler *ScheduleHandler) List(w http.ResponseWriter, r *http.Requ
 	for cursor.Next(nil) {
 		var schedule Schedule
 		if err := cursor.Decode(&schedule); err != nil {
-			log.Printf("Failed to decode document: %v", err)
-			http.Error(w, "Failed to decode document", http.StatusInternalServerError)
+			errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to decode document", &err)
 			return
 		}
 		schedules = append(schedules, schedule)

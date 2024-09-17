@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/DanVerh/artschool-admin/backend/api/db"
+	"github.com/DanVerh/artschool-admin/backend/api/errorHandling"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,30 +35,26 @@ type Student struct{
 
 // POST for student creation
 func (studentHandler *StudentHandler) Create(w http.ResponseWriter, r *http.Request) {
+	// Create Student object
 	student := &Student{}
+
 	// Check if the method is POST; return 405 in case of error
 	if r.Method != http.MethodPost {
-		errorMessage := "Invalid request method. Needs to be POST"
-		log.Println(errorMessage)
-        http.Error(w, errorMessage, http.StatusMethodNotAllowed)
-        return
-    }
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be POST", nil)
+		return
+	}
 
 	// Parse JSON request body to Student struct
 	jsonDecoder := json.NewDecoder(r.Body)
 	err := jsonDecoder.Decode(student)
 	// Check if parsing is correct; return 400 in case of error
 	if err != nil {
-		errorMessage := "Invalid JSON"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusBadRequest)
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Invalid JSON", nil)
 		return
 	}
 	// Check if fullname and phone fields are passed in request
 	if student.Fullname == "" || student.Phone == "" {
-		errorMessage := "Missing fullname or phone field"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusBadRequest)
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Missing fullname or phone field", nil)
 		return
 	}
 
@@ -72,9 +69,8 @@ func (studentHandler *StudentHandler) Create(w http.ResponseWriter, r *http.Requ
 	
 	_, err = collection.InsertOne(nil, student)
 	if err != nil {
-		log.Printf("Failed to insert document: %v", err)
-	    http.Error(w, "Failed to insert the student into the database", http.StatusInternalServerError)
-	    return
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to insert the student into the database", &err)
+		return
 	}
 
 	// Log the created student
@@ -91,11 +87,9 @@ func (studentHandler *StudentHandler) Create(w http.ResponseWriter, r *http.Requ
 func (studentHandler *StudentHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is GET; return 405 in case of error
 	if r.Method != http.MethodGet {
-		errorMessage := "Invalid request method. Needs to be GET"
-		log.Println(errorMessage)
-        http.Error(w, errorMessage, http.StatusMethodNotAllowed)
-        return
-    }
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be GET", nil)
+		return
+	}
 
 	// Connect to DB
 	db := db.DbConnect()
@@ -105,8 +99,7 @@ func (studentHandler *StudentHandler) List(w http.ResponseWriter, r *http.Reques
 	// Retrieve all documents without context
 	cursor, err := collection.Find(nil, bson.M{})
 	if err != nil {
-		log.Printf("Failed to retrieve documents: %v", err)
-		http.Error(w, "Failed to retrieve documents from the database", http.StatusInternalServerError)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to retrieve documents from the database", &err)
 		return
 	}
 	defer cursor.Close(nil)
@@ -118,16 +111,14 @@ func (studentHandler *StudentHandler) List(w http.ResponseWriter, r *http.Reques
 	for cursor.Next(nil) {
 		var student Student
 		if err := cursor.Decode(&student); err != nil {
-			log.Printf("Failed to decode document: %v", err)
-			http.Error(w, "Failed to decode document", http.StatusInternalServerError)
+			errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to decode document", &err)
 			return
 		}
 		students = append(students, student)
 	}
 
 	if err := cursor.Err(); err != nil {
-		log.Printf("Cursor error: %v", err)
-		http.Error(w, "Error occurred during cursor iteration", http.StatusInternalServerError)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Error occurred during cursor iteration", &err)
 		return
 	}
 
@@ -142,9 +133,7 @@ func (studentHandler *StudentHandler) List(w http.ResponseWriter, r *http.Reques
 func (studentHandler *StudentHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is GET; return 405 in case of error
 	if r.Method != http.MethodGet {
-		errorMessage := "Invalid request method. Needs to be GET"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be GET", nil)
 		return
 	}
 
@@ -153,8 +142,8 @@ func (studentHandler *StudentHandler) GetByID(w http.ResponseWriter, r *http.Req
     // Convert the string ID to a MongoDB ObjectId type
     objectID, err := primitive.ObjectIDFromHex(id)
     if err != nil {
-        http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
-        return
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Invalid ObjectId format", nil)
+		return
     }
 	// Create a filter to search for the document with this ObjectId
 	filter := bson.M{"_id": objectID}
@@ -171,9 +160,9 @@ func (studentHandler *StudentHandler) GetByID(w http.ResponseWriter, r *http.Req
     err = collection.FindOne(nil, filter).Decode(&result)
     if err != nil {
         if err == mongo.ErrNoDocuments {
-            http.Error(w, "No document found with the given ObjectId", http.StatusNotFound)
+			errorHandling.ThrowError(w, http.StatusNotFound, "No document found with the given ObjectId", nil)
         } else {
-            http.Error(w, "Failed to retrieve document", http.StatusInternalServerError)
+			errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to retrieve document", &err)
         }
         return
     }
@@ -189,9 +178,7 @@ func (studentHandler *StudentHandler) GetByID(w http.ResponseWriter, r *http.Req
 func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.Request) {
 	// Check if the method is PUT; return 405 in case of error
 	if r.Method != http.MethodPut {
-		errorMessage := "Invalid request method. Needs to be PUT"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be PUT", nil)
 		return
 	}
 
@@ -200,7 +187,7 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
 	// Convert the string ID to a MongoDB ObjectId type
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Invalid ObjectId format", nil)
 		return
 	}
 
@@ -208,8 +195,8 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
     jsonDecoder := json.NewDecoder(r.Body)
     err = jsonDecoder.Decode(&updateBody)
     if err != nil {
-        http.Error(w, "Invalid request body", http.StatusBadRequest)
-        return
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Invalid request body", nil)
+		return
     }
 
 	// Connect to DB
@@ -222,12 +209,11 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
 	// Find the record with required id
 	updateResult, err := collection.UpdateByID(nil, objectID, bson.M{"$set": updateBody})
 	if err != nil {
-		log.Printf("Failed to update student: %v", err)
-		http.Error(w, "Failed to update student", http.StatusInternalServerError)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to update student", &err)
+		return
 	}
 	if updateResult.MatchedCount == 0 {
-		log.Println("No record found with the provided ID")
-		http.Error(w, "No record found with the provided ID", http.StatusNotFound)
+		errorHandling.ThrowError(w, http.StatusNotFound, "No record found with the provided ID", nil)
 		return
 	}
 
@@ -235,8 +221,7 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
 	var updateKeys []string
     for updateKey := range updateBody {
         if _, found := map[string]bool{"fullname": true, "phone": true, "subscription": true, "startDate": true, "lastDate": true, "comments": true}[updateKey]; !found {
-			log.Println("No student field is updated")
-			http.Error(w, "No student field is updated", http.StatusBadRequest)
+			errorHandling.ThrowError(w, http.StatusBadRequest, "No student field is updated", nil)
 			return
 		}
 		updateKeys = append(updateKeys, updateKey)
@@ -251,11 +236,9 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
 
 // DELETE for one student by ID
 func (studentHandler *StudentHandler) DeleteByID(w http.ResponseWriter, r *http.Request) {
-	// Check if the method is DELETE; return 405 in case of error
+	// Check if the method is Delete; return 405 in case of error
 	if r.Method != http.MethodDelete {
-		errorMessage := "Invalid request method. Needs to be DELETE"
-		log.Println(errorMessage)
-		http.Error(w, errorMessage, http.StatusMethodNotAllowed)
+		errorHandling.ThrowError(w, http.StatusMethodNotAllowed, "Invalid request method. Needs to be Delete", nil)
 		return
 	}
 
@@ -264,7 +247,7 @@ func (studentHandler *StudentHandler) DeleteByID(w http.ResponseWriter, r *http.
 	// Convert the string ID to a MongoDB ObjectId type
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid ObjectId format", http.StatusBadRequest)
+		errorHandling.ThrowError(w, http.StatusBadRequest, "Invalid ObjectId format", nil)
 		return
 	}
 
@@ -278,12 +261,11 @@ func (studentHandler *StudentHandler) DeleteByID(w http.ResponseWriter, r *http.
 	// Delete record with mentioned id
 	deleteResult, err := collection.DeleteOne(nil, bson.M{"_id": objectID})
 	if err != nil {
-		log.Printf("Failed to delete student: %v", err)
-		http.Error(w, "Failed to delete student", http.StatusInternalServerError)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to delete schedule", &err)
+		return
 	} 
 	if deleteResult.DeletedCount == 0 {
-		log.Printf("No record found with the provided ID: %v", id)
-		http.Error(w, fmt.Sprintf("No record found with the provided ID: %v", id), http.StatusNotFound)
+		errorHandling.ThrowError(w, http.StatusInternalServerError, fmt.Sprintf("No student found with the provided ID: %v", id), nil)
 		return
 	}
 

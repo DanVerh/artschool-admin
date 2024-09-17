@@ -163,7 +163,7 @@ func (scheduleHandler *ScheduleHandler) GetByID(w http.ResponseWriter, r *http.R
 		if err == mongo.ErrNoDocuments {
 			errorHandling.ThrowError(w, http.StatusNotFound, "No document found with the given ObjectId", nil)
 		} else {
-			errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to retrieve document", nil)
+			errorHandling.ThrowError(w, http.StatusInternalServerError, "Failed to retrieve document", &err)
 		}
 		return
 	}

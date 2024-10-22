@@ -206,6 +206,16 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
 	// Define collection
 	collection := db.Client.Database("artschool-admin").Collection("students")
 
+	// Check if any student field is updated and save these fields to slice
+	var updateKeys []string
+	for updateKey := range updateBody {
+		if _, found := map[string]bool{"fullname": true, "phone": true, "subscription": true, "startDate": true, "lastDate": true, "comments": true}[updateKey]; !found {
+			errorHandling.ThrowError(w, http.StatusBadRequest, "No student field is updated", nil)
+			return
+		}
+		updateKeys = append(updateKeys, updateKey)
+	}
+
 	// Find the record with required id
 	updateResult, err := collection.UpdateByID(nil, objectID, bson.M{"$set": updateBody})
 	if err != nil {
@@ -216,16 +226,6 @@ func (studentHandler *StudentHandler) UpdateByID(w http.ResponseWriter, r *http.
 		errorHandling.ThrowError(w, http.StatusNotFound, "No record found with the provided ID", nil)
 		return
 	}
-
-    // Check if any student field is updated and save these fields to slice
-	var updateKeys []string
-    for updateKey := range updateBody {
-        if _, found := map[string]bool{"fullname": true, "phone": true, "subscription": true, "startDate": true, "lastDate": true, "comments": true}[updateKey]; !found {
-			errorHandling.ThrowError(w, http.StatusBadRequest, "No student field is updated", nil)
-			return
-		}
-		updateKeys = append(updateKeys, updateKey)
-    }
 
 	// Write the response with updated keys
 	response := fmt.Sprintf("Student with id %v fields updated successfully: %v",id, updateKeys)

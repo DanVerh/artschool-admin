@@ -2,7 +2,10 @@ module github.com/DanVerh/artschool-admin/backend/migration
 
 go 1.21.1
 
-require github.com/golang-migrate/migrate/v4 v4.17.1
+require (
+	github.com/golang-migrate/migrate/v4 v4.17.1
+	github.com/joho/godotenv v1.5.1
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect

@@ -18,7 +18,7 @@ type App struct {
 }
 
 // Construct for the App object
-func New() *App {
+func Init() *App {
 	app := &App{}
 
 	// Set App fields with env vars
@@ -42,8 +42,8 @@ func New() *App {
 	return app
 }
 
-// Start the app by running the migration
-func (app *App) Start() error {
+// Run the migrations up
+func (app *App) Up() error {
 	m, err := migrate.New(app.File, app.DbUri)
     if err != nil {
         log.Fatalf("Failed to create migrate instance: %v", err)
